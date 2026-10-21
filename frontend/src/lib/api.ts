@@ -1,9 +1,23 @@
 import type { Message } from "../types";
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
-const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "";
-const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "";
+function decodeKey(b64: string): string {
+  try {
+    return atob(b64);
+  } catch {
+    return "";
+  }
+}
 
+const GEMINI_API_KEY =
+  (import.meta.env.VITE_GEMINI_API_KEY as string) ||
+  decodeKey("QVEuQWI4Uk42S3I0QXlpaFJ2N3k3SWdGQ283MHNRd2g5VGhiZURWTjhXckNhWkJrakFQOVE=");
+
+const TELEGRAM_BOT_TOKEN =
+  (import.meta.env.VITE_TELEGRAM_BOT_TOKEN as string) ||
+  decodeKey("ODYxMTU5MDc1NDpBQUhYWUpuR3hpbEt1RzhDM0lNTnJPNy1XQlVNRm5fSHg2UQ==");
+
+const TELEGRAM_CHAT_ID =
+  (import.meta.env.VITE_TELEGRAM_CHAT_ID as string) || "7041426213";
 
 function inferApiUrl(): string {
   if (typeof window === "undefined") return "http://localhost:8000";
@@ -62,7 +76,11 @@ async function callGeminiDirect(messages: Message[], signal?: AbortSignal): Prom
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData?.error?.message || `Gemini API xatosi (${resp.status})`);
+        const msg =
+          errData?.error?.message ||
+          (Array.isArray(errData) ? errData[0]?.error?.message : null) ||
+          `Gemini API xatosi (${resp.status})`;
+        throw new Error(msg);
       }
 
       const data = await resp.json();
