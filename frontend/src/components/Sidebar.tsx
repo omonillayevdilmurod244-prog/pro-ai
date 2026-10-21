@@ -116,8 +116,8 @@ export default function Sidebar({
 
       <div className="side-foot">
         <div className="user-chip">
-          <div className="av">{(user.name || user.username).charAt(0).toUpperCase()}</div>
-          <div className="nm">{user.name || user.username}</div>
+          <div className="av">{(user?.name || user?.username || "U").charAt(0).toUpperCase()}</div>
+          <div className="nm">{user?.name || user?.username || "Foydalanuvchi"}</div>
         </div>
 
         <div className="foot-actions">

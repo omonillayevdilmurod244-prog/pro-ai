@@ -46,7 +46,11 @@ export default function AuthScreen({ onAuth }: Props) {
 
       if (elapsed >= duration) {
         clearInterval(interval);
-        onAuth(loadingUser);
+        try {
+          onAuth(loadingUser);
+        } catch {}
+        // Qora ekran chiqib qolmasligi va to'liq toza ishga tushishi uchun
+        window.location.reload();
       }
     }, 40);
 
