@@ -234,7 +234,7 @@ export default function App() {
         onContact={() => setShowContact(true)}
         onInstall={() => setShowInstallModal(true)}
       />
-      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+      {showContact && <ContactModal user={user} onClose={() => setShowContact(false)} />}
       {showInstallModal && (
         <InstallModal
           deferredPrompt={deferredPrompt}

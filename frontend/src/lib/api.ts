@@ -120,7 +120,10 @@ export async function sendChat(messages: Message[], signal?: AbortSignal): Promi
   }
 }
 
+let lastTelegramUpdateId = 0;
+
 export async function sendContactMessage(name: string, message: string, image: string | null): Promise<string> {
+  // 1. Agar backend mavjud bo'lsa, backend orqali yuborish
   try {
     const resp = await fetch(`${API_URL}/api/contact`, {
       method: "POST",
@@ -130,14 +133,14 @@ export async function sendContactMessage(name: string, message: string, image: s
 
     if (resp.ok) {
       const data = await resp.json();
-      return data.detail || "Muvaffaqiyatli yuborildi";
+      return data.detail || "Xabar yuborildi";
     }
   } catch {}
 
-  // Backend bo'lmasa to'g'ridan-to'g'ri Telegram botga yuborish
+  // 2. Standalone / Netlify rejimida to'g'ridan-to'g'ri Telegram botga yuborish
   try {
-    const text = `📬 Yangi murojaat:\n👤 Ism: ${name}\n💬 Xabar: ${message || "(faqat rasm)"}`;
-    
+    const text = `📬 <b>Yangi murojaat!</b>\n\n👤 <b>Ism:</b> ${name}\n💬 <b>Xabar:</b> ${message || "(faqat rasm)"}`;
+
     if (image && image.includes(",")) {
       const byteString = atob(image.split(",")[1]);
       const mimeString = image.split(",")[0].split(":")[1].split(";")[0];
@@ -147,39 +150,75 @@ export async function sendContactMessage(name: string, message: string, image: s
         ia[i] = byteString.charCodeAt(i);
       }
       const blob = new Blob([ab], { type: mimeString });
-      
+
       const formData = new FormData();
       formData.append("chat_id", TELEGRAM_CHAT_ID);
       formData.append("caption", text);
+      formData.append("parse_mode", "HTML");
       formData.append("photo", blob, "photo.jpg");
 
       const teleResp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
         method: "POST",
         body: formData
       });
-      if (teleResp.ok) return "Xabar va rasm adminga yetkazildi!";
+      if (!teleResp.ok) {
+        throw new Error("Telegramga rasm yuborib bo'lmadi");
+      }
+      return "Xabar va rasm adminga yetkazildi!";
     } else {
       const teleResp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: TELEGRAM_CHAT_ID,
-          text: text
+          text: text,
+          parse_mode: "HTML"
         })
       });
-      if (teleResp.ok) return "Xabar adminga yetkazildi!";
+      if (!teleResp.ok) {
+        throw new Error("Telegramga xabar yuborib bo'lmadi");
+      }
+      return "Xabar adminga yetkazildi!";
     }
   } catch (err: any) {
     throw new Error(err.message || "Xabar yuborishda xatolik");
   }
-
-  return "Xabar yuborildi";
 }
 
 export async function getContactMessages(): Promise<any[]> {
+  // 1. Agar backend mavjud bo'lsa
   try {
     const resp = await fetch(`${API_URL}/api/contact`);
-    if (resp.ok) return await resp.json();
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data)) return data;
+    }
   } catch {}
+
+  // 2. Agar Telegram'dan to'g'ridan-to'g'ri yangi xabarlarni tekshirish kerak bo'lsa
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastTelegramUpdateId + 1}&timeout=1`;
+    const resp = await fetch(url);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.ok && Array.isArray(data.result)) {
+        const newMsgs: any[] = [];
+        for (const update of data.result) {
+          lastTelegramUpdateId = update.update_id;
+          if (update.message && update.message.chat?.id?.toString() === TELEGRAM_CHAT_ID) {
+            if (update.message.text && !update.message.text.startsWith("/")) {
+              newMsgs.push({
+                id: update.message.message_id.toString(),
+                role: "admin",
+                content: update.message.text
+              });
+            }
+          }
+        }
+        return newMsgs;
+      }
+    }
+  } catch {}
+
   return [];
 }

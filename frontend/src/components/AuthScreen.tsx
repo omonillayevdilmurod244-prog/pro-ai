@@ -1,6 +1,7 @@
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { signUp, logIn, hasAnyUser } from "../lib/storage";
 import type { AuthUser } from "../types";
+import AiLogo from "./AiLogo";
 
 interface Props {
   onAuth: (user: AuthUser) => void;
@@ -14,7 +15,43 @@ export default function AuthScreen({ onAuth }: Props) {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
 
+  // 3 soniyalik loading holati
+  const [loadingUser, setLoadingUser] = useState<AuthUser | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState("Hisob ma'lumotlari saqlanmoqda...");
+
   const isSignup = mode === "signup";
+
+  // 3 soniyalik yuklanish taymeri
+  useEffect(() => {
+    if (!loadingUser) return;
+
+    const startTime = Date.now();
+    const duration = 3000; // 3 soniya
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(Math.round((elapsed / duration) * 100), 100);
+      setLoadingProgress(progress);
+
+      if (progress < 30) {
+        setLoadingStatus("Hisob ma'lumotlari xavfsiz saqlanmoqda...");
+      } else if (progress < 65) {
+        setLoadingStatus("proAI shaxsiy xonangiz sozlanmoqda...");
+      } else if (progress < 95) {
+        setLoadingStatus("Sun'iy intellekt modeli ulanmoqda...");
+      } else {
+        setLoadingStatus("Xush kelibsiz! ✨");
+      }
+
+      if (elapsed >= duration) {
+        clearInterval(interval);
+        onAuth(loadingUser);
+      }
+    }, 40);
+
+    return () => clearInterval(interval);
+  }, [loadingUser, onAuth]);
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -29,7 +66,8 @@ export default function AuthScreen({ onAuth }: Props) {
         setError("Bu login band. Kirishni tanlang.");
         return;
       }
-      onAuth(user);
+      // Yangi akkaunt ochilganda 3 soniyalik chiroyli loading ekrani boshlanadi
+      setLoadingUser(user);
     } else {
       const user = logIn(u, pass);
       if (!user) {
@@ -38,6 +76,45 @@ export default function AuthScreen({ onAuth }: Props) {
       }
       onAuth(user);
     }
+  }
+
+  // 3 soniyalik yuklanish ekrani
+  if (loadingUser) {
+    return (
+      <div className="auth-screen">
+        <div className="auth-loading-card">
+          <div className="loading-logo-wrap">
+            <div className="loading-pulse-ring"></div>
+            <div className="loading-pulse-ring-outer"></div>
+            <AiLogo size={56} className="loading-logo-icon" />
+          </div>
+
+          <h2>Hisobingiz yaratildi! 🎉</h2>
+          <p className="loading-sub">
+            Salom, <strong>{loadingUser.name || loadingUser.username}</strong>! proAI shaxsiy
+            tizimingiz tayyorlanmoqda...
+          </p>
+
+          <div className="auth-progress-container">
+            <div className="auth-progress-track">
+              <div
+                className="auth-progress-bar"
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+            <div className="auth-progress-meta">
+              <span className="auth-status-text">{loadingStatus}</span>
+              <span className="auth-progress-percent">{loadingProgress}%</span>
+            </div>
+          </div>
+
+          <div className="loading-timer-badge">
+            <span className="timer-dot"></span>
+            <span>Yuklanmoqda... (3 soniya)</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
