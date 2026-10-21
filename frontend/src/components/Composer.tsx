@@ -223,8 +223,25 @@ export default function Composer({
           disabled={busy || (!value.trim() && !image)}
           onClick={onSubmit}
           title="Yuborish"
+          aria-label="Yuborish"
         >
-          ↑
+          {busy ? (
+            <span className="send-spinner"></span>
+          ) : (
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="12" y1="19" x2="12" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+          )}
         </button>
       </div>
       <div className="foot">proAI xatoga yo'l qo'yishi mumkin. Muhim ma'lumotlarni tekshiring.</div>

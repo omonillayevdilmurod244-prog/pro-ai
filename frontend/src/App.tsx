@@ -8,6 +8,7 @@ import ChatThread from "./components/ChatThread";
 import Composer from "./components/Composer";
 import AiLogo from "./components/AiLogo";
 import ContactModal from "./components/ContactModal";
+import InstallModal from "./components/InstallModal";
 
 const SYSTEM_PROMPT =
   "Sen proAI - aqlli va do'stona AI yordamchisan. Foydalanuvchi qanday tilda yozsa, o'sha tilda javob ber. Agar rasm yuborilsa, rasmni batafsil tahlil qilib ber. Markdown formatdan foydalanib, aniq va foydali javoblar ber.";
@@ -22,10 +23,32 @@ export default function App() {
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [backendDown, setBackendDown] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstallBanner, setShowInstallBanner] = useState(true);
   const [isDark, setIsDark] = useState<boolean>(() => {
     const saved = getTheme();
     return saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
+
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+    setIsInstalled(isStandalone);
+
+    function handleBeforeInstall(e: Event) {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      if (!isStandalone) {
+        setShowInstallBanner(true);
+      }
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+  }, []);
 
   useEffect(() => {
     checkBackend().then((ok) => setBackendDown(!ok));
@@ -209,8 +232,19 @@ export default function App() {
         }}
         onToggleTheme={toggleTheme}
         onContact={() => setShowContact(true)}
+        onInstall={() => setShowInstallModal(true)}
       />
       {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+      {showInstallModal && (
+        <InstallModal
+          deferredPrompt={deferredPrompt}
+          onClose={() => setShowInstallModal(false)}
+          onInstalled={() => {
+            setIsInstalled(true);
+            setShowInstallBanner(false);
+          }}
+        />
+      )}
       <main className="main">
         <div className="topbar">
           {sidebarHidden && (
@@ -227,7 +261,55 @@ export default function App() {
             <AiLogo size={24} className="brand-icon" />
             <span>proAI</span>
           </button>
+
+          {!isInstalled && (
+            <button
+              className="install-topbar-btn"
+              onClick={() => setShowInstallModal(true)}
+              title="Ilovani o'rnatish (Yuklab olish)"
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Ilovani yuklash</span>
+            </button>
+          )}
         </div>
+
+        {showInstallBanner && !isInstalled && (
+          <div className="install-floating-banner">
+            <div className="banner-content" onClick={() => setShowInstallModal(true)}>
+              <span className="banner-icon">📱</span>
+              <div className="banner-text">
+                <strong>proAI ilovasini o'rnating!</strong>
+                <span>Xuddi mobil ilovalardek to'liq ekranda tez va qulay ishlaydi</span>
+              </div>
+            </div>
+            <div className="banner-actions">
+              <button className="banner-install-btn" onClick={() => setShowInstallModal(true)}>
+                Yuklab olish
+              </button>
+              <button
+                className="banner-close-btn"
+                onClick={() => setShowInstallBanner(false)}
+                title="Yopish"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
         {backendDown && (
           <div className="backend-warn">
             ⚠️ Backend serverga ulanib bo'lmadi. <strong>backend-node</strong> papkasida <code>node server.js</code> buyrug'ini ishga tushiring.
