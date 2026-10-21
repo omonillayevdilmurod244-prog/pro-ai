@@ -16,11 +16,13 @@ export default function ChatThread({ chat, busy, onSuggestion }: Props) {
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
+  const lastMsgContent = chat?.msgs && chat.msgs.length > 0 ? chat.msgs[chat.msgs.length - 1]?.content : "";
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
-  }, [chat?.msgs.length, busy, chat?.msgs[chat?.msgs.length - 1]?.content]);
+  }, [chat?.msgs?.length, busy, lastMsgContent]);
 
   useEffect(() => {
     return () => {

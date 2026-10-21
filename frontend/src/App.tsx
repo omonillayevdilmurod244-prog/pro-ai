@@ -73,7 +73,14 @@ export default function App() {
   }, [chats]);
 
   if (!user) {
-    return <AuthScreen onAuth={setUser} />;
+    return (
+      <AuthScreen
+        onAuth={(u) => {
+          setUser(u);
+          window.location.reload();
+        }}
+      />
+    );
   }
 
   const currentChat = chats.find((c) => c.id === currentId) ?? null;
