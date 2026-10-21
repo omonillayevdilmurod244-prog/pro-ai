@@ -2,11 +2,9 @@ import type { Message } from "../types";
 
 function inferApiUrl(): string {
   if (typeof window === "undefined") return "http://localhost:8000";
-  const { hostname, protocol } = window.location;
-  // Agar sayt localhost'dan boshqa joyda (masalan real domen yoki server IP) ochilgan bo'lsa,
-  // backend ham ehtimol o'sha host'da, faqat 8000-portda ishlaydi deb taxmin qilamiz.
+  const { hostname, origin } = window.location;
   if (hostname !== "localhost" && hostname !== "127.0.0.1") {
-    return `${protocol}//${hostname}:8000`;
+    return origin;
   }
   return "http://localhost:8000";
 }

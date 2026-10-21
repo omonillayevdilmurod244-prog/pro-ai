@@ -1,0 +1,10 @@
+{
+  "name": "pro-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend-node install",
+    "start": "node backend-node/server.js"
+  }
+}

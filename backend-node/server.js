@@ -1,8 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
@@ -331,9 +337,18 @@ setInterval(async () => {
   } catch (err) {}
 }, 3000);
 
+const frontendDist = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
-  console.log(`✅ proAI Backend: http://localhost:${PORT}`);
-  console.log(`   Gemini API key: ${GEMINI_API_KEY ? "sozlangan" : "YO'Q — backend-node/.env fayliga kiriting"}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ proAI Server: http://0.0.0.0:${PORT}`);
+  console.log(`   Gemini API key: ${GEMINI_API_KEY ? "sozlangan" : "YO'Q — .env fayliga kiriting"}`);
   console.log(`   Modellar: ${MODELS.join(", ")}`);
 });
