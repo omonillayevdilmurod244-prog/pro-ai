@@ -15,4 +15,6 @@ export interface Chat {
 export interface AuthUser {
   username: string;
   name: string;
+  email?: string;
 }
+

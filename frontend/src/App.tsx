@@ -236,6 +236,9 @@ export default function App() {
         onLogout={() => {
           logOut();
           setUser(null);
+          setChats([]);
+          setCurrentId(null);
+          window.location.reload();
         }}
         onToggleTheme={toggleTheme}
         onContact={() => setShowContact(true)}
